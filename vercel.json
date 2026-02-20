@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "outputDirectory": "public",
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/(.*)", "dest": "/$1" }
+  ],
+  "env": {
+    "PAYHERO_USERNAME": "@payhero_username",
+    "PAYHERO_PASSWORD": "@payhero_password",
+    "PAYHERO_CHANNEL_ID": "@payhero_channel_id",
+    "PAYHERO_PROVIDER": "m-pesa",
+    "PAYHERO_CALLBACK_URL": "@payhero_callback_url"
+  },
+  "regions": ["cdg1"]
+}

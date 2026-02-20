@@ -1,0 +1,27 @@
+{
+  "name": "mpesa-payment-vercel",
+  "version": "1.0.0",
+  "description": "M-Pesa payment gateway integrated with PayHero for Vercel",
+  "main": "api/payment.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "mpesa",
+    "payment",
+    "payhero",
+    "vercel",
+    "serverless",
+    "kenya"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "vercel": "^33.0.0"
+  },
+  "engines": {
+    "node": ">=18.x"
+  }
+}
