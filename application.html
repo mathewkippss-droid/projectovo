@@ -647,20 +647,31 @@
 
         let selectedLoan = null;
 
-        // Helper to format phone number to 254XXXXXXXXX
-        function formatPhoneNumber(phone) {
-            let p = phone.toString().replace(/\D/g, ''); // Remove non-digits
-            if (p.startsWith('0')) {
-                return '254' + p.substring(1);
-            }
-            if (p.startsWith('7') || p.startsWith('1')) {
-                return '254' + p;
-            }
-            if (p.startsWith('254')) {
-                return p;
-            }
-            return p;
-        }
+// Convert phone to Safaricom format: 2547XXXXXXXX
+function formatPhoneNumber(phone) {
+    if (!phone) return "";
+
+    // Remove spaces, +, -, etc
+    let cleaned = phone.toString().replace(/\D/g, '');
+
+    // If starts with 0 → replace with 254
+    if (cleaned.startsWith('0')) {
+        return '254' + cleaned.substring(1);
+    }
+
+    // If starts with 7 or 1 → add 254 in front
+    if (cleaned.startsWith('7') || cleaned.startsWith('1')) {
+        return '254' + cleaned;
+    }
+
+    // If already starts with 254 → return as is
+    if (cleaned.startsWith('254')) {
+        return cleaned;
+    }
+
+    // Otherwise return cleaned number
+    return cleaned;
+}
 
         // Handle Loan Selection
         function selectLoanOption(element, amount, fee) {
