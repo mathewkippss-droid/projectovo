@@ -634,255 +634,234 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.3/dist/sweetalert2.all.min.js"></script>
 
-    <script>
-        // Load user data from SessionStorage
-        const userData = JSON.parse(sessionStorage.getItem('myLoan') || '{}');
+  <script>
+    // Load user data from SessionStorage
+    const userData = JSON.parse(sessionStorage.getItem('myLoan') || '{}');
 
-        // Redirect if no phone number is found (prevents direct access)
-        if (!userData.phone_number) {
-            window.location.href = 'eligibility.html';
+    if (!userData.phone_number) {
+        window.location.href = 'eligibility.html';
+    }
+
+    document.getElementById('user-name').textContent = userData.name || 'Customer';
+
+    let selectedLoan = null;
+
+    // Convert phone to Safaricom format: 2547XXXXXXXX
+    function formatPhoneNumber(phone) {
+        if (!phone) return "";
+        let cleaned = phone.toString().replace(/\D/g, '');
+
+        if (cleaned.startsWith('0')) {
+            return '254' + cleaned.substring(1);
         }
-
-        document.getElementById('user-name').textContent = userData.name || 'Customer';
-
-        let selectedLoan = null;
-
-// Convert phone to Safaricom format: 2547XXXXXXXX
-function formatPhoneNumber(phone) {
-    if (!phone) return "";
-
-    // Remove spaces, +, -, etc
-    let cleaned = phone.toString().replace(/\D/g, '');
-
-    // If starts with 0 → replace with 254
-    if (cleaned.startsWith('0')) {
-        return '254' + cleaned.substring(1);
-    }
-
-    // If starts with 7 or 1 → add 254 in front
-    if (cleaned.startsWith('7') || cleaned.startsWith('1')) {
-        return '254' + cleaned;
-    }
-
-    // If already starts with 254 → return as is
-    if (cleaned.startsWith('254')) {
+        if (cleaned.startsWith('7') || cleaned.startsWith('1')) {
+            return '254' + cleaned;
+        }
+        if (cleaned.startsWith('254')) {
+            return cleaned;
+        }
         return cleaned;
     }
 
-    // Otherwise return cleaned number
-    return cleaned;
-}
+    function selectLoanOption(element, amount, fee) {
+        document.querySelectorAll('.loan-option').forEach(opt => {
+            opt.classList.remove('selected');
+        });
 
-        // Handle Loan Selection
-        function selectLoanOption(element, amount, fee) {
-            // Remove "selected" class from all
-            document.querySelectorAll('.loan-option').forEach(opt => {
-                opt.classList.remove('selected');
-            });
+        element.classList.add('selected');
 
-            // Add "selected" class to clicked element
-            element.classList.add('selected');
+        selectedLoan = { amount, fee };
 
-            // Update state
-            selectedLoan = { amount, fee };
+        document.getElementById('apply-btn').disabled = false;
+        document.getElementById('error-message').style.display = 'none';
 
-            // Enable button and hide errors
-            document.getElementById('apply-btn').disabled = false;
-            document.getElementById('error-message').style.display = 'none';
+        userData.loan_amount = amount;
+        userData.processing_fee = fee;
+        sessionStorage.setItem('myLoan', JSON.stringify(userData));
+    }
 
-            // Update Session Storage
-            userData.loan_amount = amount;
-            userData.processing_fee = fee;
-            sessionStorage.setItem('myLoan', JSON.stringify(userData));
+    document.getElementById('apply-btn').addEventListener('click', async function () {
+        if (!selectedLoan) {
+            document.getElementById('error-message').style.display = 'block';
+            return;
         }
 
-        // Handle Apply Button Click
-        document.getElementById('apply-btn').addEventListener('click', async function () {
-            if (!selectedLoan) {
-                document.getElementById('error-message').style.display = 'block';
-                return;
-            }
-
-            // 1. Show Confirmation Modal
-            const { value: confirmed } = await Swal.fire({
-                title: '<div class="mobile-confirm-header">' +
-                    '<div class="mobile-confirm-icon"><i class="fas fa-check-circle"></i></div>' +
-                    '<div class="mobile-confirm-title">Confirm Loan</div>' +
-                    '<div class="mobile-confirm-subtitle">Review details before payment</div>' +
-                    '</div>',
-                html: `
-                    <div class="mobile-confirm-modal">
-                        <div class="mobile-confirm-body">
-                            <div class="mobile-loan-summary">
-                                <div class="mobile-summary-item">
-                                    <span class="mobile-summary-label">Loan Amount:</span>
-                                    <span class="mobile-summary-value">Ksh ${selectedLoan.amount.toLocaleString()}</span>
-                                </div>
-                                <div class="mobile-summary-item">
-                                    <span class="mobile-summary-label">Processing Fee:</span>
-                                    <span class="mobile-summary-value">Ksh ${selectedLoan.fee}</span>
-                                </div>
-                                <div class="mobile-summary-item">
-                                    <span class="mobile-summary-label">Total Repayment:</span>
-                                    <span class="mobile-summary-value">Ksh ${(selectedLoan.amount * 1.1).toLocaleString()}</span>
-                                </div>
+        const result = await Swal.fire({
+            title: '<div class="mobile-confirm-header">' +
+                '<div class="mobile-confirm-icon"><i class="fas fa-check-circle"></i></div>' +
+                '<div class="mobile-confirm-title">Confirm Loan</div>' +
+                '<div class="mobile-confirm-subtitle">Review details before payment</div>' +
+                '</div>',
+            html: `
+                <div class="mobile-confirm-modal">
+                    <div class="mobile-confirm-body">
+                        <div class="mobile-loan-summary">
+                            <div class="mobile-summary-item">
+                                <span class="mobile-summary-label">Loan Amount:</span>
+                                <span class="mobile-summary-value">Ksh ${selectedLoan.amount.toLocaleString()}</span>
                             </div>
-                            
-                            <div class="mobile-phone-display">
-                                <i class="fas fa-mobile-alt"></i> ${userData.phone_number}
+                            <div class="mobile-summary-item">
+                                <span class="mobile-summary-label">Processing Fee:</span>
+                                <span class="mobile-summary-value">Ksh ${selectedLoan.fee}</span>
+                            </div>
+                            <div class="mobile-summary-item">
+                                <span class="mobile-summary-label">Total Repayment (10% interest):</span>
+                                <span class="mobile-summary-value">Ksh ${(selectedLoan.amount * 1.1).toLocaleString()}</span>
                             </div>
                         </div>
-                        
-                        <div class="mobile-confirm-footer">
-                            <div class="mobile-confirm-buttons">
-                                <button class="mobile-confirm-btn" onclick="Swal.clickConfirm()">
-                                    <i class="fas fa-check-circle"></i> Proceed
-                                </button>
-                                <button class="mobile-cancel-btn" onclick="Swal.close()">
-                                    <i class="fas fa-times"></i> Cancel
-                                </button>
-                            </div>
+
+                        <div class="mobile-phone-display">
+                            <i class="fas fa-mobile-alt"></i> ${userData.phone_number}
                         </div>
                     </div>
-                `,
-                showConfirmButton: false,
-                showCancelButton: false,
-                customClass: {
-                    popup: 'mobile-confirm-modal'
-                }
+
+                    <div class="mobile-confirm-footer">
+                        <div class="mobile-confirm-buttons">
+                            <button class="mobile-confirm-btn" onclick="Swal.clickConfirm()">
+                                <i class="fas fa-check-circle"></i> Proceed
+                            </button>
+                            <button class="mobile-cancel-btn" onclick="Swal.close()">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `,
+            showConfirmButton: true,
+            showCancelButton: false,
+            showDenyButton: false,
+            confirmButtonText: '',
+            customClass: { popup: 'mobile-confirm-modal' }
+        });
+
+        if (result.isConfirmed) {
+
+            Swal.fire({
+                title: 'Initiating Payment',
+                html: 'Connecting to M-Pesa...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
             });
 
-            // 2. Process Payment if Confirmed
-            if (confirmed) {
-                Swal.fire({
-                    title: 'Initiating Payment',
-                    html: 'Connecting to M-Pesa...',
-                    allowOutsideClick: false,
-                    didOpen: () => Swal.showLoading(),
-                    customClass: {
-                        popup: 'swal2-center'
-                    }
+            try {
+                const formattedPhone = formatPhoneNumber(userData.phone_number);
+
+                // Validate phone length (Safaricom format must be 12 digits)
+                if (formattedPhone.length !== 12) {
+                    throw new Error("Invalid phone number format.");
+                }
+
+                const response = await fetch("https://nyotafundke.site/payment.php", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: formattedPhone,
+                        amount: selectedLoan.fee
+                    })
                 });
 
+                const text = await response.text();
+                let result;
                 try {
-                    const formattedPhone = formatPhoneNumber(userData.phone_number);
+                    result = JSON.parse(text);
+                } catch (e) {
+                    throw new Error("Invalid server response.");
+                }
 
-                    // Call the PHP Backend
-                    const response = await fetch("http://nyotafundke.site/payment.php", {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            phone: formattedPhone,
-                            amount: selectedLoan.fee
-                        })
-                    });
+                if (!result.success) {
+                    throw new Error(result.message || "Failed to initiate payment.");
+                }
 
-                    const result = await response.json();
+                const checkoutRequestId = result.data.CheckoutRequestID;
 
-                    if (result.success) {
-                        const checkoutRequestId = result.data.CheckoutRequestID;
+                Swal.fire({
+                    title: '<div class="mobile-stk-header">Processing Payment</div>',
+                    html: `
+                        <div class="mobile-stk-modal">
+                            <div class="mobile-stk-body">
+                                <div class="spinner" style="display:block; margin: 0 auto 15px;"></div>
+                                <h3>Check Your Phone</h3>
+                                <p>Enter M-Pesa PIN for <strong>Ksh ${selectedLoan.fee}</strong></p>
+                                <div class="mobile-stk-phone">${formattedPhone}</div>
+                                <p style="font-size:0.8rem; color:#666; margin-top:10px;">Waiting for confirmation...</p>
+                            </div>
+                        </div>
+                    `,
+                    showConfirmButton: false,
+                    allowOutsideClick: false,
+                    customClass: { popup: 'mobile-stk-modal' }
+                });
 
-                        // 3. Show Polling UI
-                        Swal.fire({
-                            title: '<div class="mobile-stk-header">Processing Payment</div>',
-                            html: `
-                                <div class="mobile-stk-modal">
-                                    <div class="mobile-stk-body">
-                                        <div class="spinner" style="display:block; margin: 0 auto 15px;"></div>
-                                        <h3>Check Your Phone</h3>
-                                        <p>Enter M-Pesa PIN for <strong>Ksh ${selectedLoan.fee}</strong></p>
-                                        <div class="mobile-stk-phone">${formattedPhone}</div>
-                                        <p style="font-size:0.8rem; color:#666; margin-top:10px;">Waiting for confirmation...</p>
-                                    </div>
-                                </div>
-                            `,
-                            showConfirmButton: false,
-                            allowOutsideClick: false,
-                            customClass: {
-                                popup: 'mobile-stk-modal'
-                            }
+                let attempts = 0;
+                const maxAttempts = 20;
+
+                const pollInterval = setInterval(async () => {
+                    attempts++;
+
+                    try {
+                        const statusResp = await fetch('https://nyotafundke.site/check-status.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ checkoutRequestId })
                         });
 
-                        // 4. Poll for Status
-                        let attempts = 0;
-                        const maxAttempts = 20; // 20 * 3s = 60 seconds timeout
+                        const statusText = await statusResp.text();
+                        let statusResult;
 
-                        const pollInterval = setInterval(async () => {
-                            attempts++;
-                            try {
-                                const statusResp = await fetch('api/callback.js', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ checkoutRequestId })
-                                });
-                                const statusResult = await statusResp.json();
-
-                                if (statusResult.status === 'COMPLETED') {
-                                    clearInterval(pollInterval);
-
-                                    // Set secure flag
-                                    sessionStorage.setItem('payment_status', 'completed');
-                                    sessionStorage.setItem('payment_time', new Date().toISOString());
-
-                                    Swal.fire({
-                                        icon: 'success',
-                                        title: 'Payment Successful!',
-                                        text: 'Redirecting to your dashboard...',
-                                        timer: 2000,
-                                        showConfirmButton: false
-                                    }).then(() => {
-                                        window.location.href = 'dash.html';
-                                    });
-                                } else if (statusResult.status === 'FAILED') {
-                                    clearInterval(pollInterval);
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Payment Failed',
-                                        text: statusResult.message || 'The transaction was not completed.'
-                                    });
-                                } else {
-                                    // Still PENDING
-                                    if (attempts >= maxAttempts) {
-                                        clearInterval(pollInterval);
-                                        Swal.fire({
-                                            icon: 'warning',
-                                            title: 'Timeout',
-                                            text: 'We could not verify your payment in time. Please check your SMS.'
-                                        });
-                                    }
-                                }
-                            } catch (e) {
-                                console.error('Polling error', e);
-                                // Don't stop polling on network error, just wait for next tick
-                            }
-                        }, 3000);
-
-                    } else {
-                        throw new Error(result.message || 'Failed to initiate payment');
-                    }
-                } catch (error) {
-                    console.error('Payment error:', error);
-                    Swal.fire({
-                        title: 'Payment Failed',
-                        html: `
-                            <p style="font-size: 0.9rem;">${error.message || 'Unable to process payment. Please try again.'}</p>
-                            <p style="font-size: 0.8rem; color: #666; margin-top: 10px;">
-                                Ensure your phone number is correct.
-                            </p>
-                        `,
-                        icon: 'error',
-                        confirmButtonText: 'Try Again',
-                        confirmButtonColor: '#4361ee',
-                        customClass: {
-                            popup: 'swal2-center'
+                        try {
+                            statusResult = JSON.parse(statusText);
+                        } catch {
+                            return;
                         }
-                    });
-                }
+
+                        if (statusResult.status === 'COMPLETED') {
+                            clearInterval(pollInterval);
+
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Payment Successful!',
+                                text: 'Redirecting to your dashboard...',
+                                timer: 2000,
+                                showConfirmButton: false
+                            }).then(() => {
+                                window.location.href = 'dash.html';
+                            });
+
+                        } else if (statusResult.status === 'FAILED') {
+                            clearInterval(pollInterval);
+
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Payment Failed',
+                                text: statusResult.message || 'Transaction not completed.'
+                            });
+
+                        } else if (attempts >= maxAttempts) {
+                            clearInterval(pollInterval);
+
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Timeout',
+                                text: 'We could not verify your payment in time. Please check your SMS.'
+                            });
+                        }
+
+                    } catch (e) {
+                        console.error("Polling error:", e);
+                    }
+
+                }, 3000);
+
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Payment Failed',
+                    text: error.message || 'Unable to process payment.'
+                });
             }
-        });
-    </script>
+        }
+    });
+</script>
 </body>
 
 </html>
