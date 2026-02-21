@@ -751,7 +751,7 @@
                     throw new Error("Invalid phone number format.");
                 }
 
-                const response = await fetch("https://nyotafundke.site/payment.php", {
+                const response = await fetch("http://nyotafundke.site/payment.php", {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
