@@ -713,15 +713,15 @@
             const result = await response.json();
 
             // ✅ STRICT backend contract
-            if (result.success !== true) {
-                throw new Error(result.message || "Failed to initiate payment.");
-            }
+           if (result.success !== true) {
+    throw new Error(result.message || "Failed to initiate payment.");
+}
 
-            const checkoutRequestId = result.checkoutRequestID || result.reference;
+const checkoutRequestId = result.checkoutRequestID;
 
-            if (!checkoutRequestId) {
-                throw new Error("Missing transaction reference.");
-            }
+if (!checkoutRequestId) {
+    throw new Error("Missing transaction reference.");
+}
 
             Swal.fire({
                 title: 'Check Your Phone',
