@@ -773,7 +773,7 @@
                     throw new Error(result.message || "STK sent. Enter your M-Pesa PIN to complete payment.");
                 }
 
-                const checkoutRequestId = result.data.CheckoutRequestID;
+                const checkoutRequestId = result.checkoutRequestID || result.reference;
 
                 Swal.fire({
                     title: '<div class="mobile-stk-header">Processing Payment</div>',
