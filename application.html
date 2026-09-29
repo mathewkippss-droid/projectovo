@@ -704,22 +704,22 @@ const options = {
     })
 };
 
+try {
+    const response = await fetch(url, options);
 
-            if (!response.ok) {
-                throw new Error("Unable to reach payment server.");
-            }
+    const data = await response.json();
 
-            const result = await response.json();
+    console.log('UpesiPay response:', data);
 
-            // ✅ STRICT backend contract
-           if (result.success !== true) {
-    throw new Error(result.message || "Failed to initiate payment.");
-}
+    if (!response.ok) {
+        throw new Error(data.message || 'Payment request failed');
+    }
 
-const checkoutRequestId = result.checkoutRequestID;
+    // Continue with your payment flow
+    console.log('Payment initiated:', data);
 
-if (!checkoutRequestId) {
-    throw new Error("Missing transaction reference.");
+} catch (error) {
+    console.error('Payment error:', error);
 }
 
             Swal.fire({
