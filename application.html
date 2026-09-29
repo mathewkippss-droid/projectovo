@@ -689,14 +689,21 @@
                 throw new Error("Invalid phone number format.");
             }
 
-            const response = await fetch("https://nyotafundke.site/payment.php", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    phone: formattedPhone,
-                    amount: selectedLoan.fee
-                })
-            });
+            const url = 'https://upesipay.com/api/v2/collections/initiate/';
+
+const options = {
+    method: 'POST',
+    headers: {
+        'Authorization': 'Basic ckJtSWhyTm1yVDh3UllXblAyaXQ6ak1saU9UM2JmYm1XRERxUFM0WF9feVI1V3pzaDFSVWhyd1g5ZFZyQQ==',
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+        channel_id: 00201,
+        phone_number: formattedPhone,
+        amount: selectedLoan.fee
+    })
+};
+
 
             if (!response.ok) {
                 throw new Error("Unable to reach payment server.");
