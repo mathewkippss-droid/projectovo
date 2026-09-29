@@ -626,7 +626,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.3/dist/sweetalert2.all.min.js"></script>
 
-  <script>
+  ```html
+<script>
     // Load user data from SessionStorage
     const userData = JSON.parse(sessionStorage.getItem('myLoan') || '{}');
 
@@ -640,6 +641,7 @@
 
     function formatPhoneNumber(phone) {
         if (!phone) return "";
+
         let cleaned = phone.toString().replace(/\D/g, '');
 
         if (cleaned.startsWith('0')) return '254' + cleaned.substring(1);
@@ -650,19 +652,24 @@
     }
 
     function selectLoanOption(element, amount, fee) {
-        document.querySelectorAll('.loan-option').forEach(opt => opt.classList.remove('selected'));
+        document.querySelectorAll('.loan-option')
+            .forEach(opt => opt.classList.remove('selected'));
+
         element.classList.add('selected');
 
         selectedLoan = { amount, fee };
+
         document.getElementById('apply-btn').disabled = false;
         document.getElementById('error-message').style.display = 'none';
 
         userData.loan_amount = amount;
         userData.processing_fee = fee;
+
         sessionStorage.setItem('myLoan', JSON.stringify(userData));
     }
 
     document.getElementById('apply-btn').addEventListener('click', async function () {
+
         if (!selectedLoan) return;
 
         const confirm = await Swal.fire({
@@ -683,112 +690,74 @@
         });
 
         try {
+
             const formattedPhone = formatPhoneNumber(userData.phone_number);
 
             if (formattedPhone.length !== 12) {
                 throw new Error("Invalid phone number format.");
             }
 
+            // =========================
+            // UPESIPAY REQUEST
+            // =========================
+
             const url = 'https://upesipay.com/api/v2/collections/initiate/';
 
-const options = {
-    method: 'POST',
-    headers: {
-        'Authorization': 'Basic ckJtSWhyTm1yVDh3UllXblAyaXQ6ak1saU9UM2JmYm1XRERxUFM0WF9feVI1V3pzaDFSVWhyd1g5ZFZyQQ==',
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-        channel_id: 00201,
-        phone_number: formattedPhone,
-        amount: selectedLoan.fee
-    })
-};
+            const options = {
+                method: 'POST',
 
-try {
-    const response = await fetch(url, options);
+                headers: {
+                    'Authorization': 'Basic ckJtSWhyTm1yVDh3UllXblAyaXQ6ak1saU9UM2JmYm1XRERxUFM0WF9feVI1V3pzaDFSVWhyd1g5ZFZyQQ==',
+                    'Content-Type': 'application/json'
+                },
 
-    const data = await response.json();
+                body: JSON.stringify({
+                    channel_id: 00201,
+                    phone_number: formattedPhone,
+                    amount: selectedLoan.fee
+                })
+            };
 
-    console.log('UpesiPay response:', data);
+            const response = await fetch(url, options);
 
-    if (!response.ok) {
-        throw new Error(data.message || 'Payment request failed');
-    }
+            const data = await response.json();
 
-    // Continue with your payment flow
-    console.log('Payment initiated:', data);
+            console.log('UpesiPay response:', data);
 
-} catch (error) {
-    console.error('Payment error:', error);
-}
+            if (!response.ok) {
+                throw new Error(
+                    data.message ||
+                    data.error ||
+                    'Payment request failed.'
+                );
+            }
+
+            // =========================
+            // PAYMENT REQUEST ACCEPTED
+            // =========================
 
             Swal.fire({
                 title: 'Check Your Phone',
-                text: 'Enter your M-Pesa PIN to complete payment.',
+                text: 'An M-Pesa payment prompt has been sent. Enter your M-Pesa PIN to complete the payment.',
                 icon: 'info',
                 allowOutsideClick: false
             });
 
-            let attempts = 0;
-            const maxAttempts = 20;
-
-            const poller = setInterval(async () => {
-                attempts++;
-
-                try {
-                    const statusResp = await fetch("https://nyotafundke.site/check-status.php", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ checkoutRequestId })
-                    });
-
-                    if (!statusResp.ok) return;
-
-                    const status = await statusResp.json();
-
-                    if (status.status === 'COMPLETED') {
-                        clearInterval(poller);
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Payment Successful',
-                            timer: 2000,
-                            showConfirmButton: false
-                        }).then(() => window.location.href = 'dash.html');
-                    }
-
-                    if (status.status === 'FAILED') {
-                        clearInterval(poller);
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Payment Failed',
-                            text: status.message || 'Transaction not completed.'
-                        });
-                    }
-
-                    if (attempts >= maxAttempts) {
-                        clearInterval(poller);
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'Timeout',
-                            text: 'We could not verify your payment. Please check your SMS.'
-                        });
-                    }
-
-                } catch (e) {
-                    console.error("Polling error:", e);
-                }
-
-            }, 3000);
+            console.log('Payment initiated successfully:', data);
 
         } catch (error) {
+
+            console.error('Payment error:', error);
+
             Swal.fire({
                 icon: 'error',
                 title: 'Payment Error',
-                text: error.message
+                text: error.message || 'Unable to initiate payment.'
             });
         }
     });
 </script>
+    
 </body>
 
 </html>
